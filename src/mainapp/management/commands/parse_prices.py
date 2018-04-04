@@ -4,6 +4,7 @@ import os
 import requests
 import time
 
+from concurrent import futures
 from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand
@@ -12,22 +13,32 @@ from mainapp.models import Ticker, Price
 
 
 class Command(BaseCommand):
-    help = "Parse csv and create tickers"
+    help = "Parse html and create prices"
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--num_threads',
+            default=1,
+            help='Number of threads',
+        )
 
     def handle(self, *args, **options):
-        print('Start')
+        self.stdout.write('Start')
         start = time.time()
 
-        tickers = self.parse_many()
+        tickers = Ticker.objects.all()[:3].values_list('symbol', flat=True)
+
+        total = self.parse_many(tickers, options['num_threads'])
 
         end = time.time()
         time_total = end - start
 
-        print(
-            'Elapsed: {:.2f}s\nObjects created: {}\nFinish'.format(
-                time_total, tickers
+        self.stdout.write(
+            'Elapsed: {:.2f}s\nObjects created: {}'.format(
+                time_total, total
             )
         )
+        self.stdout.write(self.style.SUCCESS('Done'))
 
     def parse_one(self, symbol):
         url = 'https://www.nasdaq.com/symbol/{}/historical'.format(symbol.lower())
@@ -52,8 +63,20 @@ class Command(BaseCommand):
             )
             new_price.save()
 
-    def parse_many(self):
-        tickers = Ticker.objects.all()[:1].values_list('symbol', flat=True)
+    def parse_many(self, t_list, num):
+        with futures.ThreadPoolExecutor(max_workers=int(num)) as executor:
+            to_do = []
+            for t in t_list:
+                future = executor.submit(self.parse_one, t)
+                to_do.append(future)
+                msg = 'Scheduled for {}: {}'
+                print(msg.format(t, future))
 
-        for t in tickers:
-            self.parse_one(t)
+            results = []
+            for future in futures.as_completed(to_do):
+                res = future.result()
+                msg = '{} result: {!r}'
+                print(msg.format(future, res))
+                results.append(res)
+
+        return len(results)

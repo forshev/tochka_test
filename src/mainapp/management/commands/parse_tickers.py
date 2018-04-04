@@ -12,7 +12,7 @@ class Command(BaseCommand):
     help = "Parse csv and create tickers"
 
     def handle(self, *args, **options):
-        print('Start')
+        self.stdout.write('Start')
         start = time.time()
 
         tickers = self.parse()
@@ -20,11 +20,12 @@ class Command(BaseCommand):
         end = time.time()
         time_total = end - start
 
-        print(
-            'Finish\n elapsed: {:.2f}s\n, objects created: {}\n'.format(
+        self.stdout.write(
+            'Elapsed: {:.2f}s\nObjects created: {}'.format(
                 time_total, tickers
             )
         )
+        self.stdout.write(self.style.SUCCESS('Done'))
 
     def parse(self):
         filename = 'nasdaqlisted.txt'
