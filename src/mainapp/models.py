@@ -41,14 +41,14 @@ class Price(models.Model):
 class InsiderTrade(models.Model):
     ticker = models.ForeignKey(Ticker, related_name='insider_trades',
                                verbose_name=u'Ticker')
-    insider = models.CharField('Insider', max_length=50)
-    relation = models.CharField('Relation', max_length=20)
+    insider = models.CharField('Insider', max_length=70)
+    relation = models.CharField('Relation', max_length=70)
     last_date = models.DateField('Last date')
     transaction_type = models.CharField('Transaction type', max_length=50)
-    owner_type = models.CharField('Owner type', max_length=20)
-    shares_traded = models.FloatField('Shares traded')
+    owner_type = models.CharField('Owner type', max_length=50)
+    shares_traded = models.PositiveIntegerField('Shares traded')
     last_price = models.FloatField('Last price')
-    shares_held = models.FloatField('Shares held')
+    shares_held = models.PositiveIntegerField('Shares held')
 
     def __str__(self):
         return '{}-{}-{}'.format(

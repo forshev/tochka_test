@@ -10,7 +10,7 @@ class ParseCommandMixin(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--num_threads',
-            default=30,
+            default=50,
             help='Number of threads',
         )
 
