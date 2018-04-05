@@ -8,6 +8,7 @@ from concurrent import futures
 from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand
+from itertools import chain
 from lxml import html
 from mainapp.models import Ticker, Price
 
@@ -18,38 +19,46 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument(
             '--num_threads',
-            default=1,
+            default=30,
             help='Number of threads',
+        )
+        parser.add_argument(
+            '--batch_size',
+            default=1000,
+            help='Size of batch to insert into DB'
         )
 
     def handle(self, *args, **options):
         self.stdout.write('Start')
         start = time.time()
 
-        tickers = Ticker.objects.all()[:3].values_list('symbol', flat=True)
+        tickers = Ticker.objects.all()[:2].values_list('symbol', flat=True)
 
-        total = self.parse_many(tickers, options['num_threads'])
+        saved, errors = self.parse_many(
+            tickers, options['num_threads'], options['batch_size'])
 
         end = time.time()
         time_total = end - start
 
-        self.stdout.write(
-            'Elapsed: {:.2f}s\nObjects created: {}'.format(
-                time_total, total
-            )
-        )
         self.stdout.write(self.style.SUCCESS('Done'))
+        self.stdout.write(
+            'Elapsed: {:.2f}s\nErrors: {}\nObjects created: {}'.format(
+                time_total, errors, saved))
 
     def parse_one(self, symbol):
         url = 'https://www.nasdaq.com/symbol/{}/historical'.format(symbol.lower())
         ticker = Ticker.objects.get(symbol=symbol)
-        r = requests.get(url)
-        tree = html.fromstring(r.text)
 
+        r = requests.get(url)
+        if r.status_code != 200:
+            r.raise_for_status()
+
+        tree = html.fromstring(r.text)
         historical_table = tree.xpath(
             "//div[@id = 'historicalContainer']/div/table/tbody")[0]
         rows = historical_table.xpath(".//tr")
 
+        prices = []
         for row in rows[1:]:
             tds = row.xpath(".//td/text()")
             new_price = Price(
@@ -61,22 +70,45 @@ class Command(BaseCommand):
                 close=tds[4].strip(),
                 volume=tds[5].strip().replace(',', ''),
             )
-            new_price.save()
+            prices.append(new_price)
 
-    def parse_many(self, t_list, num):
-        with futures.ThreadPoolExecutor(max_workers=int(num)) as executor:
+        return prices
+
+    def parse_many(self, t_list, num_threads, batch_size):
+        # avoid creating more threads than necessary
+        workers = min(1000, len(t_list), int(num_threads))
+        self.stdout.write('{} threads created'.format(workers))
+
+        with futures.ThreadPoolExecutor(max_workers=workers) as executor:
             to_do = []
             for t in t_list:
                 future = executor.submit(self.parse_one, t)
                 to_do.append(future)
-                msg = 'Scheduled for {}: {}'
-                print(msg.format(t, future))
+                # msg = 'Scheduled for {}: {}'
+                # self.stdout.write(msg.format(t, future))
 
             results = []
-            for future in futures.as_completed(to_do):
-                res = future.result()
-                msg = '{} result: {!r}'
-                print(msg.format(future, res))
-                results.append(res)
+            errors = 0
+            for idx, future in enumerate(futures.as_completed(to_do)):
+                # Progress display
+                msg = 'Parsing: {}/{}'
+                self.stdout.write(
+                    msg.format(idx + 1, len(to_do)),
+                    ending='\r'
+                )
+                self.stdout.flush()
 
-        return len(results)
+                try:
+                    res = future.result()
+                except:
+                    errors += 1
+                else:
+                    # msg = '{} result: {!r}'
+                    # self.stdout.write(msg.format(future, res))
+                    results.append(res)
+
+            prices = list(chain.from_iterable(results))
+            self.stdout.write('\nInserting objects into DB')
+            Price.objects.bulk_create(prices, batch_size=int(batch_size))
+
+        return len(prices), errors
