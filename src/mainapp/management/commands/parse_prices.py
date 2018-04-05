@@ -8,7 +8,6 @@ from concurrent import futures
 from datetime import datetime
 from django.conf import settings
 from django.core.management.base import BaseCommand
-from itertools import chain
 from lxml import html
 from mainapp.models import Ticker, Price
 
@@ -22,25 +21,19 @@ class Command(BaseCommand):
             default=30,
             help='Number of threads',
         )
-        parser.add_argument(
-            '--batch_size',
-            default=1000,
-            help='Size of batch to insert into DB'
-        )
 
     def handle(self, *args, **options):
         self.stdout.write('Start')
         start = time.time()
 
-        tickers = Ticker.objects.all()[:2].values_list('symbol', flat=True)
+        tickers = Ticker.objects.all().values_list('symbol', flat=True)
 
-        saved, errors = self.parse_many(
-            tickers, options['num_threads'], options['batch_size'])
+        saved, errors = self.parse_many(tickers, options['num_threads'])
 
         end = time.time()
         time_total = end - start
 
-        self.stdout.write(self.style.SUCCESS('Done'))
+        self.stdout.write(self.style.SUCCESS('\nDone'))
         self.stdout.write(
             'Elapsed: {:.2f}s\nErrors: {}\nObjects created: {}'.format(
                 time_total, errors, saved))
@@ -59,11 +52,18 @@ class Command(BaseCommand):
         rows = historical_table.xpath(".//tr")
 
         prices = []
-        for row in rows[1:]:
+        for row in rows:
             tds = row.xpath(".//td/text()")
+
+            # first td is time, not date
+            try:
+                date = datetime.strptime(tds[0].strip(), '%m/%d/%Y')
+            except:
+                date = datetime.now().date()
+
             new_price = Price(
                 ticker=ticker,
-                date=datetime.strptime(tds[0].strip(), '%m/%d/%Y'),
+                date=date,
                 open=tds[1].strip(),
                 high=tds[2].strip(),
                 low=tds[3].strip(),
@@ -72,9 +72,11 @@ class Command(BaseCommand):
             )
             prices.append(new_price)
 
-        return prices
+        Price.objects.bulk_create(prices, batch_size=1000)
 
-    def parse_many(self, t_list, num_threads, batch_size):
+        return len(prices)
+
+    def parse_many(self, t_list, num_threads):
         # avoid creating more threads than necessary
         workers = min(1000, len(t_list), int(num_threads))
         self.stdout.write('{} threads created'.format(workers))
@@ -107,8 +109,4 @@ class Command(BaseCommand):
                     # self.stdout.write(msg.format(future, res))
                     results.append(res)
 
-            prices = list(chain.from_iterable(results))
-            self.stdout.write('\nInserting objects into DB')
-            Price.objects.bulk_create(prices, batch_size=int(batch_size))
-
-        return len(prices), errors
+        return sum(results), errors
