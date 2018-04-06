@@ -8,12 +8,15 @@
 </head>
 
 <body>
+  {% if prices %}
   <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="#">{{ prices.0.ticker.symbol }}</a>
+                <a class="navbar-brand" href="{% url 'index' %}">{{ prices.0.ticker.symbol }}</a>
             </div>
             <p class="navbar-text">{{ prices.0.ticker.security_name }}</p>
+            <a class="navbar-text" href="{% url 'ticker_insiders' prices.0.ticker.symbol %}">Insider Trades</a>
+            <a class="navbar-text" href="{% url 'ticker_analytics' prices.0.ticker.symbol %}">Analytics</a>
         </div>
   </nav>
   <div class="col-md-8 col-md-offset-2">
@@ -42,6 +45,15 @@
       </tbody>
     </table>
   </div>
+  {% else %}
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          <div class="navbar-header">
+              <a class="navbar-brand" href="/">No Data</a>
+          </div>
+      </div>
+    </nav>
+  {% endif %}
 </body>
 
 </html>

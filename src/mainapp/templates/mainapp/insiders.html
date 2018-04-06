@@ -8,10 +8,11 @@
 </head>
 
 <body>
+  {% if insiders %}
   <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
-                <a class="navbar-brand" href="#">{{ insiders.0.ticker.symbol }}</a>
+                <a class="navbar-brand" href="{% url 'index' %}">{{ insiders.0.ticker.symbol }}</a>
             </div>
             <p class="navbar-text">{{ insiders.0.ticker.security_name }}</p>
         </div>
@@ -34,7 +35,7 @@
         <tbody>
             {% for insider in insiders %}
             <tr>
-            <td>{{ insider.insider }}</td>
+            <td><a href="{% url 'insider_trades' insiders.0.ticker.symbol insider.slug %}">{{ insider.insider }}</a></td>
             <td>{{ insider.relation }}</td>
             <td>{{ insider.last_date }}</td>
             <td>{{ insider.transaction_type }}</td>
@@ -49,29 +50,40 @@
     </div>
     </div>
 
-  <div class="row"> 
     {% if insiders.has_other_pages %}
-        <ul class="pagination">
-            {% if insiders.has_previous %}
-                <li><a href="?page={{ insiders.previous_page_number }}">&laquo;</a></li>
-            {% else %}
-                <li class="disabled"><span>&laquo;</span></li>
-            {% endif %}
-            {% for i in insiders.paginator.page_range %}
-            {% if insiders.number == i %}
-                <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
-            {% else %}
-                <li><a href="?page={{ i }}">{{ i }}</a></li>
-            {% endif %}
-            {% endfor %}
-            {% if insiders.has_next %}
-                <li><a href="?page={{ insiders.next_page_number }}">&raquo;</a></li>
-            {% else %}
-                <li class="disabled"><span>&raquo;</span></li>
-            {% endif %}
-        </ul>
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <ul class="pagination">
+                {% if insiders.has_previous %}
+                    <li><a href="?page={{ insiders.previous_page_number }}">&laquo;</a></li>
+                {% else %}
+                    <li class="disabled"><span>&laquo;</span></li>
+                {% endif %}
+                {% for i in insiders.paginator.page_range %}
+                {% if insiders.number == i %}
+                    <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
+                {% else %}
+                    <li><a href="?page={{ i }}">{{ i }}</a></li>
+                {% endif %}
+                {% endfor %}
+                {% if insiders.has_next %}
+                    <li><a href="?page={{ insiders.next_page_number }}">&raquo;</a></li>
+                {% else %}
+                    <li class="disabled"><span>&raquo;</span></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
     {% endif %}
-    </div> 
+    {% else %}
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          <div class="navbar-header">
+              <a class="navbar-brand" href="/">No Data</a>
+          </div>
+      </div>
+    </nav>
+  {% endif %}
 </body>
 
 </html>

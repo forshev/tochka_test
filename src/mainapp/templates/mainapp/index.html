@@ -8,6 +8,13 @@
 </head>
 
 <body>
+    <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">Tickers</a>
+            </div>
+        </div>
+    </nav>
     <div class="col-md-8 col-md-offset-2">
     <table class="table table-sm table-striped">
         <thead>
@@ -25,7 +32,9 @@
         <tbody>
             {% for ticker in tickers %}
             <tr>
-                <td><a href="{{ ticker.symbol }}">{{ ticker.symbol }}</a></td>
+                <td>
+                    <a href="{% url 'ticker_prices' ticker=ticker.symbol %}">{{ ticker.symbol }}</a>
+                </td>
                 <td>{{ ticker.security_name }}</td>
                 <td>{{ ticker.market_category }}</td>
                 <td>{{ ticker.test_issue }}</td>
@@ -40,25 +49,29 @@
     </div>
 
     {% if tickers.has_other_pages %}
-    <ul class="pagination">
-        {% if tickers.has_previous %}
-            <li><a href="?page={{ tickers.previous_page_number }}">&laquo;</a></li>
-        {% else %}
-            <li class="disabled"><span>&laquo;</span></li>
-        {% endif %}
-        {% for i in tickers.paginator.page_range %}
-        {% if tickers.number == i %}
-            <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
-        {% else %}
-            <li><a href="?page={{ i }}">{{ i }}</a></li>
-        {% endif %}
-        {% endfor %}
-        {% if tickers.has_next %}
-            <li><a href="?page={{ tickers.next_page_number }}">&raquo;</a></li>
-        {% else %}
-            <li class="disabled"><span>&raquo;</span></li>
-        {% endif %}
-    </ul>
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+        <ul class="pagination">
+            {% if tickers.has_previous %}
+                <li><a href="?page={{ tickers.previous_page_number }}">&laquo;</a></li>
+            {% else %}
+                <li class="disabled"><span>&laquo;</span></li>
+            {% endif %}
+            {% for i in tickers.paginator.page_range %}
+            {% if tickers.number == i %}
+                <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
+            {% else %}
+                <li><a href="?page={{ i }}">{{ i }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% if tickers.has_next %}
+                <li><a href="?page={{ tickers.next_page_number }}">&raquo;</a></li>
+            {% else %}
+                <li class="disabled"><span>&raquo;</span></li>
+            {% endif %}
+            </ul>
+        </div>
+    </div>
     {% endif %}
 </body>
 

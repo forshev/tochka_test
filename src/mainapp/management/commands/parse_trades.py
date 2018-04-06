@@ -1,6 +1,7 @@
 # -*- coding: utf-8; -*-
 from concurrent import futures
 from datetime import datetime
+from django.utils.text import slugify
 from itertools import chain
 from mainapp.helper import get_html
 from mainapp.mixins import ParseCommandMixin
@@ -21,10 +22,11 @@ class Command(ParseCommandMixin):
         trades = []
         for row in rows:
             tds = row.xpath(".//td/text()")
+            insider = row.xpath(".//a/text()")[0].strip()
 
             new_trade = InsiderTrade(
                 ticker=ticker,
-                insider=row.xpath(".//a/text()")[0].strip(),
+                insider=insider,
                 relation=tds[0].strip(),
                 last_date=datetime.strptime(tds[1].strip(), '%m/%d/%Y'),
                 transaction_type=tds[2].strip(),
@@ -32,8 +34,9 @@ class Command(ParseCommandMixin):
                 shares_traded=tds[4].strip().replace(',', ''),
                 last_price=tds[5].strip(),
                 shares_held=tds[6].strip().replace(',', ''),
+                slug=slugify()
             )
-            trades.append(new_trade)
+            trades.append(insider)
 
         return trades
 

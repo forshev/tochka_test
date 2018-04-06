@@ -1,7 +1,8 @@
 # -*- coding: utf-8; -*-
 import requests
 
-from django.db.models import Min, Max
+from datetime import datetime
+from django.db.models import Q, Min, Max
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import get_object_or_404
 from lxml import html
@@ -28,12 +29,17 @@ def paginate(request, objects, num):
         result = paginator.page(1)
     except EmptyPage:
         result = paginator.page(paginator.num_pages)
+
     return result
 
 
 def get_all_tickers(request):
-    tickers = Ticker.objects.all()
-    return paginate(request, tickers, 30)
+    # do not return tickers without data
+    tickers = Ticker.objects.filter(
+        Q(insider_trades__isnull=False) & Q(prices__isnull=False)
+    ).distinct().order_by('symbol')
+
+    return paginate(request, tickers, 50)
 
 
 def get_prices(ticker):
@@ -41,25 +47,31 @@ def get_prices(ticker):
     return Price.objects.filter(ticker=ticker).order_by('-date')
 
 
-def get_insiders(request, ticker):
+def get_insiders(request, ticker, insider=None):
     ticker = get_object_or_404(Ticker, symbol=ticker)
-    insiders = InsiderTrade.objects.filter(ticker=ticker).order_by('-last_date')
+    if insider:
+        insiders = InsiderTrade.objects.filter(slug=insider)
+    else:
+        insiders = InsiderTrade.objects.filter(
+            ticker=ticker).order_by('-last_date')
+
     return paginate(request, insiders, 15)
 
 
 def get_analytics(ticker, date_from, date_to):
     ticker = get_object_or_404(Ticker, symbol=ticker)
-    prices = Price.objects.filter(
-        ticker=ticker, date__range=(date_from, date_to)
-    )
 
-    open_max = prices.aggregate(Max('open'))
-    open_min = prices.aggregate(Min('open'))
-    high_max = prices.aggregate(Max('high'))
-    high_min = prices.aggregate(Min('high'))
-    low_max = prices.aggregate(Max('low'))
-    low_min = prices.aggregate(Min('low'))
-    close_max = prices.aggregate(Max('close'))
-    close_min = prices.aggregate(Min('close'))
+    date_from = datetime.strptime(date_from, '%d-%m-%Y')
+    date_to = datetime.strptime(date_to, '%d-%m-%Y')
 
-    return prices
+    prices_from = Price.objects.get(ticker=ticker, date=date_from)
+    prices_to = Price.objects.get(ticker=ticker, date=date_to)
+
+    diffs = {}
+    diffs['ticker'] = ticker
+    diffs['diff_open'] = prices_from.open - prices_to.open
+    diffs['diff_high'] = prices_from.high - prices_to.high
+    diffs['diff_low'] = prices_from.low - prices_to.low
+    diffs['diff_close'] = prices_from.close - prices_to.close
+
+    return diffs

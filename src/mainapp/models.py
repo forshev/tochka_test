@@ -49,6 +49,7 @@ class InsiderTrade(models.Model):
     shares_traded = models.PositiveIntegerField('Shares traded')
     last_price = models.FloatField('Last price')
     shares_held = models.PositiveIntegerField('Shares held')
+    slug = models.SlugField('Slug', max_length=255, blank=True, null=True)
 
     def __str__(self):
         return '{}-{}-{}'.format(

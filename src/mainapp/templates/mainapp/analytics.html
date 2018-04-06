@@ -1,0 +1,38 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+  <meta charset="utf-8">
+  <title>Prices</title>
+</head>
+
+<body>
+  {% if analytics %}
+  <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{% url 'index' %}">{{ analytics.ticker.symbol }}</a>
+            </div>
+        </div>
+  </nav>
+  <div class="col-md-8 col-md-offset-2">
+    <ul class="list-group">
+        <li class="list-group-item">Open price difference: {{ analytics.diff_open|floatformat:2 }}$</li>
+        <li class="list-group-item">High price difference: {{ analytics.diff_high|floatformat:2 }}$</li>
+        <li class="list-group-item">Low price difference: {{ analytics.diff_low|floatformat:2 }}$</li>
+        <li class="list-group-item">Close price difference: {{ analytics.diff_close|floatformat:2 }}$</li>
+    </ul>
+  </div>
+  {% else %}
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          <div class="navbar-header">
+              <a class="navbar-brand" href="/">No Data</a>
+          </div>
+      </div>
+    </nav>
+  {% endif %}
+</body>
+
+</html>
