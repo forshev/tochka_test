@@ -1,0 +1,65 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+    <meta charset="utf-8">
+    <title>Tickers</title>
+</head>
+
+<body>
+    <div class="col-md-8 col-md-offset-2">
+    <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Symbol</th>
+                <th scope="col">Security Name</th>
+                <th scope="col">Market Category</th>
+                <th scope="col">Test Issue</th>
+                <th scope="col">Financial Status</th>
+                <th scope="col">Round Lot Size</th>
+                <th scope="col">ETF</th>
+                <th scope="col">Next Shares</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticker in tickers %}
+            <tr>
+                <td><a href="{{ ticker.symbol }}">{{ ticker.symbol }}</a></td>
+                <td>{{ ticker.security_name }}</td>
+                <td>{{ ticker.market_category }}</td>
+                <td>{{ ticker.test_issue }}</td>
+                <td>{{ ticker.financial_status }}</td>
+                <td>{{ ticker.round_lot_size }}</td>
+                <td>{{ ticker.etf }}</td>
+                <td>{{ ticker.next_shares }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+
+    {% if tickers.has_other_pages %}
+    <ul class="pagination">
+        {% if tickers.has_previous %}
+            <li><a href="?page={{ tickers.previous_page_number }}">&laquo;</a></li>
+        {% else %}
+            <li class="disabled"><span>&laquo;</span></li>
+        {% endif %}
+        {% for i in tickers.paginator.page_range %}
+        {% if tickers.number == i %}
+            <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
+        {% else %}
+            <li><a href="?page={{ i }}">{{ i }}</a></li>
+        {% endif %}
+        {% endfor %}
+        {% if tickers.has_next %}
+            <li><a href="?page={{ tickers.next_page_number }}">&raquo;</a></li>
+        {% else %}
+            <li class="disabled"><span>&raquo;</span></li>
+        {% endif %}
+    </ul>
+    {% endif %}
+</body>
+
+</html>

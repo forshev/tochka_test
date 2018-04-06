@@ -58,7 +58,7 @@ class Command(ParseCommandMixin):
                     to_do.append(future)
 
                 results = []
-                for idx, future in enumerate(futures.as_completed(to_do)):
+                for future in futures.as_completed(to_do):
                     try:
                         res = future.result()
                     except:

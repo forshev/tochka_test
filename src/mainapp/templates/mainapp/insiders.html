@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+  <meta charset="utf-8">
+  <title>Insiders</title>
+</head>
+
+<body>
+  <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">{{ insiders.0.ticker.symbol }}</a>
+            </div>
+            <p class="navbar-text">{{ insiders.0.ticker.security_name }}</p>
+        </div>
+  </nav>
+  <div class="row">
+    <div class="col-md-8 col-md-offset-2">
+        <table class="table table-sm table-striped">
+        <thead>
+            <tr>
+            <th scope="col">Insider</th>
+            <th scope="col">Relation</th>
+            <th scope="col">Last Date</th>
+            <th scope="col">Transaction Type</th>
+            <th scope="col">Owner Type</th>
+            <th scope="col">Shares Traded</th>
+            <th scope="col">Lats Price</th>
+            <th scope="col">Shares Held</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for insider in insiders %}
+            <tr>
+            <td>{{ insider.insider }}</td>
+            <td>{{ insider.relation }}</td>
+            <td>{{ insider.last_date }}</td>
+            <td>{{ insider.transaction_type }}</td>
+            <td>{{ insider.owner_type }}</td>
+            <td>{{ insider.shares_traded }}</td>
+            <td>{{ insider.last_price }}</td>
+            <td>{{ insider.shares_held }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        </table>
+    </div>
+    </div>
+
+  <div class="row"> 
+    {% if insiders.has_other_pages %}
+        <ul class="pagination">
+            {% if insiders.has_previous %}
+                <li><a href="?page={{ insiders.previous_page_number }}">&laquo;</a></li>
+            {% else %}
+                <li class="disabled"><span>&laquo;</span></li>
+            {% endif %}
+            {% for i in insiders.paginator.page_range %}
+            {% if insiders.number == i %}
+                <li class="active"><span>{{ i }} <span class="sr-only"></span></span></li>
+            {% else %}
+                <li><a href="?page={{ i }}">{{ i }}</a></li>
+            {% endif %}
+            {% endfor %}
+            {% if insiders.has_next %}
+                <li><a href="?page={{ insiders.next_page_number }}">&raquo;</a></li>
+            {% else %}
+                <li class="disabled"><span>&raquo;</span></li>
+            {% endif %}
+        </ul>
+    {% endif %}
+    </div> 
+</body>
+
+</html>
