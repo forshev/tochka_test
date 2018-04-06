@@ -18,7 +18,7 @@ class ParseCommandMixin(BaseCommand):
         self.stdout.write('Start')
         start = time.time()
 
-        tickers = Ticker.objects.all()[:2].values_list('symbol', flat=True)
+        tickers = Ticker.objects.all().values_list('symbol', flat=True)
 
         saved, errors = self.parse_many(tickers, options['num_threads'])
 
@@ -57,15 +57,13 @@ class ParseCommandMixin(BaseCommand):
                 )
                 self.stdout.flush()
 
-                res = future.result()
-                results.append(res)
-                # try:
-                #     res = future.result()
-                # except:
-                #     errors += 1
-                # else:
-                #     # msg = '{} result: {!r}'
-                #     # self.stdout.write(msg.format(future, res))
-                #     results.append(res)
+                try:
+                    res = future.result()
+                except:
+                    errors += 1
+                else:
+                    # msg = '{} result: {!r}'
+                    # self.stdout.write(msg.format(future, res))
+                    results.append(res)
 
         return sum(results), errors

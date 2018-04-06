@@ -1,8 +1,8 @@
 # -*- coding: utf-8; -*-
-import requests
-
+from concurrent import futures
 from datetime import datetime
-from lxml import html
+from itertools import chain
+from mainapp.helper import get_html
 from mainapp.mixins import ParseCommandMixin
 from mainapp.models import Ticker, InsiderTrade
 
@@ -10,18 +10,12 @@ from mainapp.models import Ticker, InsiderTrade
 class Command(ParseCommandMixin):
     help = "Parse html and create insider trades"
 
-    def parse_one(self, symbol, url=None):
-        if not url:
-            url = 'https://www.nasdaq.com/symbol/{}/insider-trades'.\
-                format(symbol.lower())
-
+    def parse_page(self, symbol, page_num):
+        url = 'https://www.nasdaq.com/symbol/{}/insider-trades?page={}'.\
+            format(symbol.lower(), page_num)
         ticker = Ticker.objects.get(symbol=symbol)
 
-        r = requests.get(url)
-        if r.status_code != 200:
-            r.raise_for_status()
-
-        tree = html.fromstring(r.text)
+        tree = get_html(url)
         rows = tree.xpath("//div[@class='genTable']/table/tr")
 
         trades = []
@@ -41,15 +35,42 @@ class Command(ParseCommandMixin):
             )
             trades.append(new_trade)
 
-        # InsiderTrade.objects.bulk_create(trades, batch_size=1000)
+        return trades
 
-        next_page = tree.xpath(
-            "//a[@id='quotes_content_left_lb_NextPage']/@href")
+    def parse_one(self, symbol):
+        url = 'https://www.nasdaq.com/symbol/{}/insider-trades'.\
+            format(symbol.lower())
 
-        if next_page:
-            print(next_page)[0]
-            next_num = int(next_page[0].split('=')[-1])
-            if next_num <= 10:
-                self.parse_one(symbol, next_page[0])
+        tree = get_html(url)
+        last_page = tree.xpath(
+            "//a[@id='quotes_content_left_lb_LastPage']/@href")
+
+        trades = []
+        if last_page:
+            # do not parse more than 10 pages
+            last_num = min(int(last_page[0].split('=')[-1]), 10)
+
+            # spawn thread for each pagination link (up to 10)
+            with futures.ThreadPoolExecutor(max_workers=last_num) as executor:
+                to_do = []
+                for i in range(1, last_num+1):
+                    future = executor.submit(self.parse_page, symbol, i)
+                    to_do.append(future)
+
+                results = []
+                for idx, future in enumerate(futures.as_completed(to_do)):
+                    try:
+                        res = future.result()
+                    except:
+                        pass
+                    else:
+                        results.append(res)
+
+                trades = list(chain.from_iterable(results))
+
+        else:
+            trades = self.parse_page(symbol, 1)
+
+        InsiderTrade.objects.bulk_create(trades, batch_size=1000)
 
         return len(trades)

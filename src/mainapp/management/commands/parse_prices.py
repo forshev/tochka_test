@@ -1,8 +1,7 @@
 # -*- coding: utf-8; -*-
-import requests
-
 from datetime import datetime
 from lxml import html
+from mainapp.helper import get_html
 from mainapp.mixins import ParseCommandMixin
 from mainapp.models import Ticker, Price
 
@@ -14,11 +13,7 @@ class Command(ParseCommandMixin):
         url = 'https://www.nasdaq.com/symbol/{}/historical'.format(symbol.lower())
         ticker = Ticker.objects.get(symbol=symbol)
 
-        r = requests.get(url)
-        if r.status_code != 200:
-            r.raise_for_status()
-
-        tree = html.fromstring(r.text)
+        tree = get_html(url)
         historical_table = tree.xpath(
             "//div[@id='historicalContainer']/div/table/tbody")[0]
         rows = historical_table.xpath(".//tr")
