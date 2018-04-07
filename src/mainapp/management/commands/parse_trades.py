@@ -21,22 +21,22 @@ class Command(ParseCommandMixin):
 
         trades = []
         for row in rows:
-            tds = row.xpath(".//td/text()")
-            insider = row.xpath(".//a/text()")[0].strip()
+            tds_row = row.xpath(".//td")
+            tds = ['0' if td.text_content() == '' else td.text_content().strip() for td in tds_row]
 
             new_trade = InsiderTrade(
                 ticker=ticker,
-                insider=insider,
-                relation=tds[0].strip(),
-                last_date=datetime.strptime(tds[1].strip(), '%m/%d/%Y'),
-                transaction_type=tds[2].strip(),
-                owner_type=tds[3].strip(),
-                shares_traded=tds[4].strip().replace(',', ''),
-                last_price=tds[5].strip(),
-                shares_held=tds[6].strip().replace(',', ''),
-                slug=slugify()
+                insider=tds[0],
+                relation=tds[1],
+                last_date=datetime.strptime(tds[2], '%m/%d/%Y'),
+                transaction_type=tds[3],
+                owner_type=tds[4],
+                shares_traded=tds[5].replace(',', ''),
+                last_price=tds[6],
+                shares_held=tds[7].replace(',', ''),
+                slug=slugify(tds[0])
             )
-            trades.append(insider)
+            trades.append(new_trade)
 
         return trades
 

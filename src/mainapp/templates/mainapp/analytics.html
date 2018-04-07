@@ -8,7 +8,7 @@
 </head>
 
 <body>
-  {% if analytics %}
+  {% if not analytics.error %}
   <nav class="navbar navbar-default">
         <div class="container-fluid">
             <div class="navbar-header">
@@ -18,6 +18,7 @@
   </nav>
   <div class="col-md-8 col-md-offset-2">
     <ul class="list-group">
+        <li class="list-group-item">From: {{ analytics.date_from }}, To: {{ analytics.date_to }}</li>
         <li class="list-group-item">Open price difference: {{ analytics.diff_open|floatformat:2 }}$</li>
         <li class="list-group-item">High price difference: {{ analytics.diff_high|floatformat:2 }}$</li>
         <li class="list-group-item">Low price difference: {{ analytics.diff_low|floatformat:2 }}$</li>
@@ -28,7 +29,7 @@
     <nav class="navbar navbar-default">
       <div class="container-fluid">
           <div class="navbar-header">
-              <a class="navbar-brand" href="/">No Data</a>
+              <a class="navbar-brand" href="/">{{ analytics.error }}</a>
           </div>
       </div>
     </nav>

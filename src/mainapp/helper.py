@@ -60,15 +60,33 @@ def get_insiders(request, ticker, insider=None):
 
 def get_analytics(ticker, date_from, date_to):
     ticker = get_object_or_404(Ticker, symbol=ticker)
+    diffs = {}
 
-    date_from = datetime.strptime(date_from, '%d-%m-%Y')
-    date_to = datetime.strptime(date_to, '%d-%m-%Y')
+    # if date is not specified, get earliest/latest date from DB
+    if not date_from:
+        date_from = Price.objects.earliest('date').date
+    else:
+        try:
+            date_from = datetime.strptime(date_from, '%d-%m-%Y').date()
+        except:
+            diffs['error'] = "Date parameters must match format 'dd-mm-yyyy'"
+            return diffs
+
+    if not date_to:
+        date_to = Price.objects.latest('date').date
+    else:
+        try:
+            date_to = datetime.strptime(date_to, '%d-%m-%Y').date()
+        except:
+            diffs['error'] = "Date parameters must match format 'dd-mm-yyyy'"
+            return diffs
 
     prices_from = Price.objects.get(ticker=ticker, date=date_from)
     prices_to = Price.objects.get(ticker=ticker, date=date_to)
 
-    diffs = {}
     diffs['ticker'] = ticker
+    diffs['date_from'] = date_from
+    diffs['date_to'] = date_to
     diffs['diff_open'] = prices_from.open - prices_to.open
     diffs['diff_high'] = prices_from.high - prices_to.high
     diffs['diff_low'] = prices_from.low - prices_to.low

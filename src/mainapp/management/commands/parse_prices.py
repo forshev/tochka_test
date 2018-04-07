@@ -19,23 +19,18 @@ class Command(ParseCommandMixin):
         rows = historical_table.xpath(".//tr")
 
         prices = []
-        for row in rows:
-            tds = row.xpath(".//td/text()")
-
-            # first td is time, not date
-            try:
-                date = datetime.strptime(tds[0].strip(), '%m/%d/%Y')
-            except:
-                date = datetime.now().date()
+        for row in rows[1:]:
+            tds_row = row.xpath(".//td")
+            tds = ['0' if td.text_content() == '' else td.text_content().strip() for td in tds_row]
 
             new_price = Price(
                 ticker=ticker,
-                date=date,
-                open=tds[1].strip(),
-                high=tds[2].strip(),
-                low=tds[3].strip(),
-                close=tds[4].strip(),
-                volume=tds[5].strip().replace(',', ''),
+                date=datetime.strptime(tds[0], '%m/%d/%Y'),
+                open=tds[1],
+                high=tds[2],
+                low=tds[3],
+                close=tds[4],
+                volume=tds[5].replace(',', ''),
             )
             prices.append(new_price)
 
