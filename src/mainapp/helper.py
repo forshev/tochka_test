@@ -53,9 +53,9 @@ def get_insiders(request, ticker, insider=None):
         insiders = InsiderTrade.objects.filter(slug=insider)
     else:
         insiders = InsiderTrade.objects.filter(
-            ticker=ticker).order_by('-last_date')
+            ticker=ticker)
 
-    return paginate(request, insiders, 15)
+    return paginate(request, insiders.order_by('-last_date'), 15)
 
 
 def get_analytics(ticker, date_from, date_to):
@@ -81,10 +81,14 @@ def get_analytics(ticker, date_from, date_to):
             diffs['error'] = "Date parameters must match format 'dd-mm-yyyy'"
             return diffs
 
-    prices_from = Price.objects.get(ticker=ticker, date=date_from)
-    prices_to = Price.objects.get(ticker=ticker, date=date_to)
+    prices_from = Price.objects.filter(ticker=ticker, date=date_from).first()
+    prices_to = Price.objects.filter(ticker=ticker, date=date_to).first()
 
-    diffs['ticker'] = ticker
+    if not prices_from or not prices_to:
+        diffs['error'] = "No data found for these dates"
+        return diffs
+
+    diffs['ticker'] = ticker.symbol
     diffs['date_from'] = date_from
     diffs['date_to'] = date_to
     diffs['diff_open'] = prices_from.open - prices_to.open
