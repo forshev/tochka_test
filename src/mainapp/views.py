@@ -3,6 +3,7 @@ from django.shortcuts import render
 from mainapp.helper import (
     get_all_tickers, get_prices,
     get_insiders, get_analytics,
+    get_ticker_delta,
 )
 
 
@@ -31,3 +32,10 @@ def ticker_analytics(request, ticker):
     date_to = request.GET.get('date_to', None)
     analytics = get_analytics(ticker, date_from, date_to)
     return render(request, 'mainapp/analytics.html', {'analytics': analytics})
+
+
+def ticker_delta(request, ticker):
+    value = request.GET.get('value', None)
+    _type = request.GET.get('type', None)
+    delta = get_ticker_delta(ticker, value, _type)
+    return render(request, 'mainapp/delta.html', {'delta': delta})

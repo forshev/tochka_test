@@ -7,6 +7,7 @@ from django.shortcuts import render
 from mainapp.helper import (
     get_all_tickers, get_prices,
     get_insiders, get_analytics,
+    get_ticker_delta,
 )
 
 
@@ -57,3 +58,11 @@ def api_ticker_analytics(request, ticker):
     analytics = get_analytics(ticker, date_from, date_to)
 
     return JsonResponse({'results': analytics}, safe=False)
+
+
+def api_ticker_delta(request, ticker):
+    value = request.GET.get('value', None)
+    _type = request.GET.get('type', None)
+    delta = get_ticker_delta(ticker, value, _type)
+
+    return JsonResponse({'results': delta}, safe=False)

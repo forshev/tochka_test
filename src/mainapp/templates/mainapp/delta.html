@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css">
+  <meta charset="utf-8">
+  <title>Delta</title>
+</head>
+
+<body>
+  {% if not delta.error %}
+  <nav class="navbar navbar-default">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="{% url 'index' %}">{{ delta.ticker }}</a>
+            </div>
+        </div>
+  </nav>
+  <div class="col-md-8 col-md-offset-2">
+    <ul class="list-group">
+        <li class="list-group-item">From: {{ delta.date_from }}, To: {{ delta.date_to }}</li>
+        <li class="list-group-item">Open price difference: {{ delta.diff_open|floatformat:2 }}$</li>
+        <li class="list-group-item">High price difference: {{ delta.diff_high|floatformat:2 }}$</li>
+        <li class="list-group-item">Low price difference: {{ delta.diff_low|floatformat:2 }}$</li>
+        <li class="list-group-item">Close price difference: {{ delta.diff_close|floatformat:2 }}$</li>
+    </ul>
+  </div>
+  {% else %}
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          <div class="navbar-header">
+              <a class="navbar-brand" href="/">{{ delta.error }}</a>
+          </div>
+      </div>
+    </nav>
+  {% endif %}
+</body>
+
+</html>

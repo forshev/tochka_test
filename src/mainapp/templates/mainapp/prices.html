@@ -17,6 +17,7 @@
             <p class="navbar-text">{{ prices.0.ticker.security_name }}</p>
             <a class="navbar-text" href="{% url 'ticker_insiders' prices.0.ticker.symbol %}">Insider Trades</a>
             <a class="navbar-text" href="{% url 'ticker_analytics' prices.0.ticker.symbol %}">Analytics</a>
+            <a class="navbar-text" href="{% url 'ticker_delta' prices.0.ticker.symbol %}">Delta</a>
         </div>
   </nav>
   <div class="col-md-8 col-md-offset-2">

@@ -10,4 +10,5 @@ urlpatterns = [
     url(r'^(?P<ticker>[-\w]+)/insider$', views.api_ticker_insiders, name="api_ticker_insiders"),
     url(r'^(?P<ticker>[-\w]+)/insider/(?P<insider>[-\w]+)/$', views.api_insider_trades, name="api_insider_trades"),
     url(r'^(?P<ticker>[-\w]+)/analytics$', views.api_ticker_analytics, name="api_ticker_analytics"),
+    url(r'^(?P<ticker>[-\w]+)/delta$', views.api_ticker_delta, name="api_ticker_delta"),
 ]

@@ -2,6 +2,7 @@
 import requests
 
 from datetime import datetime
+from django.db import connection
 from django.db.models import Q, Min, Max
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import get_object_or_404
@@ -97,3 +98,81 @@ def get_analytics(ticker, date_from, date_to):
     diffs['diff_close'] = prices_from.close - prices_to.close
 
     return diffs
+
+
+def min_interval(diffs, value):
+    length = len(diffs)
+    min_len = length + 1
+
+    starts = None
+    ends = None
+    # starts = []
+    # ends = []
+
+    for start in range(0, length):
+
+        curr_sum = diffs[start]
+
+        if (curr_sum > value):
+            return 1, 0, 1
+
+        for end in range(start + 1, length):
+            curr_sum += diffs[end]
+
+            if curr_sum > value and (end - start + 1) < min_len:
+                min_len = (end - start + 1)
+                # starts.append(start + 1)
+                # ends.append(end)
+                starts = start
+                ends = end
+
+    return min_len, starts, ends
+
+
+def get_ticker_delta(ticker, value, _type):
+    ticker = get_object_or_404(Ticker, symbol=ticker)
+    delta = {}
+
+    cursor = connection.cursor()
+    query = """select date,
+                    abs({0} - lag({0}) over (order by date)) as diff
+                from mainapp_price
+                where ticker_id = {1}
+                order by date
+                offset 1"""
+    # query = """select
+    #             t1.date,
+    #             abs(t1.{0} - t2.{0}) as diff
+    #         from mainapp_price t1
+    #         left join mainapp_price t2
+    #             on t2.date = t1.date - INTERVAL '1' DAY
+    #             and t2.ticker_id = t1.ticker_id
+    #         where t1.ticker_id = {1}"""
+    cursor.execute(query.format(_type, ticker.pk))
+    rows = cursor.fetchall()
+
+    dates = [i[0] for i in rows]
+    diffs = [0.0 if i[1] is None else i[1] for i in rows]
+
+    min_len, starts, ends = min_interval(diffs, float(value))
+
+    # starts = [dates[i] for i in starts]
+    # ends = [dates[i] for i in ends]
+
+    # intervals = list(zip(starts, ends))
+    # intervals = [i for i in intervals if (i[1] - i[0]).days == min_len]
+    # for i in intervals:
+    #     d = (i[1] - i[0]).days
+    #     print(d)
+    #     if d == min_len:
+    #         print(i)
+
+    start = dates[starts]
+    end = dates[ends]
+
+    print(min_len)
+    print(start)
+    print(end)
+    # print(intervals)
+
+    return delta
