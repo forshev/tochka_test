@@ -166,7 +166,6 @@ def get_ticker_delta(ticker, value, _type):
     # выбираем из полученных выше интервалов те, разница дат которых равна
     # длинне минимального подсписка - 1
     intervals = [i for i in intervals if (i[1] - i[0]).days == min_len - 1]
-    print(intervals)
 
     delta['ticker'] = ticker.symbol
     delta['min_len'] = min_len
