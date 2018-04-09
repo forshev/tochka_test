@@ -1,7 +1,7 @@
 # -*- coding: utf-8; -*-
 import requests
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.db import connection
 from django.db.models import Q, Min, Max
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -104,75 +104,72 @@ def min_interval(diffs, value):
     length = len(diffs)
     min_len = length + 1
 
-    starts = None
-    ends = None
-    # starts = []
-    # ends = []
+    starts = []
+    ends = []
 
     for start in range(0, length):
 
         curr_sum = diffs[start]
 
-        if (curr_sum > value):
-            return 1, 0, 1
-
         for end in range(start + 1, length):
             curr_sum += diffs[end]
 
-            if curr_sum > value and (end - start + 1) < min_len:
+            if curr_sum > value and (end - start + 1) <= min_len:
                 min_len = (end - start + 1)
-                # starts.append(start + 1)
-                # ends.append(end)
-                starts = start
-                ends = end
+                starts.append(start)
+                ends.append(end)
 
     return min_len, starts, ends
 
 
+# боль
 def get_ticker_delta(ticker, value, _type):
-    ticker = get_object_or_404(Ticker, symbol=ticker)
     delta = {}
+    if not value or not _type:
+        delta['error'] = "You should specify value and type parameters"
+        return delta
+
+    ticker = get_object_or_404(Ticker, symbol=ticker)
 
     cursor = connection.cursor()
-    query = """select date,
-                    abs({0} - lag({0}) over (order by date)) as diff
-                from mainapp_price
-                where ticker_id = {1}
-                order by date
-                offset 1"""
-    # query = """select
-    #             t1.date,
-    #             abs(t1.{0} - t2.{0}) as diff
-    #         from mainapp_price t1
-    #         left join mainapp_price t2
-    #             on t2.date = t1.date - INTERVAL '1' DAY
-    #             and t2.ticker_id = t1.ticker_id
-    #         where t1.ticker_id = {1}"""
+    query = """with series as (
+                    SELECT generate_series((select min(date) from mainapp_price)::date
+                                        ,(select max(date) from mainapp_price)::date
+                                        ,interval '1 day') as date
+                )
+                select series.date::date, diff from (
+                    select date,
+                        abs({0} - lag({0}) over (order by date)) as diff
+                    from mainapp_price
+                    where ticker_id = {1}
+                    order by date
+                ) t1
+                right join series on t1.date = series.date;"""
     cursor.execute(query.format(_type, ticker.pk))
     rows = cursor.fetchall()
 
     dates = [i[0] for i in rows]
     diffs = [0.0 if i[1] is None else i[1] for i in rows]
 
+    # получаем списки с первыми и последними датами всех интервалов,
+    # сумма изменений по которым больше заданного значения
     min_len, starts, ends = min_interval(diffs, float(value))
 
-    # starts = [dates[i] for i in starts]
-    # ends = [dates[i] for i in ends]
+    if min_len > len(diffs):
+        delta['error'] = "Value is greater than whole data changes sum"
+        return delta
 
-    # intervals = list(zip(starts, ends))
-    # intervals = [i for i in intervals if (i[1] - i[0]).days == min_len]
-    # for i in intervals:
-    #     d = (i[1] - i[0]).days
-    #     print(d)
-    #     if d == min_len:
-    #         print(i)
+    starts = [dates[i] for i in starts]
+    ends = [dates[i] for i in ends]
 
-    start = dates[starts]
-    end = dates[ends]
+    intervals = list(zip(starts, ends))
+    # выбираем из полученных выше интервалов те, разница дат которых равна
+    # длинне минимального подсписка - 1
+    intervals = [i for i in intervals if (i[1] - i[0]).days == min_len - 1]
+    print(intervals)
 
-    print(min_len)
-    print(start)
-    print(end)
-    # print(intervals)
+    delta['ticker'] = ticker.symbol
+    delta['min_len'] = min_len
+    delta['intervals'] = intervals
 
     return delta

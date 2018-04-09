@@ -18,12 +18,10 @@
   </nav>
   <div class="col-md-8 col-md-offset-2">
     <ul class="list-group">
-        <li class="list-group-item">From: {{ delta.date_from }}, To: {{ delta.date_to }}</li>
-        <li class="list-group-item">Open price difference: {{ delta.diff_open|floatformat:2 }}$</li>
-        <li class="list-group-item">High price difference: {{ delta.diff_high|floatformat:2 }}$</li>
-        <li class="list-group-item">Low price difference: {{ delta.diff_low|floatformat:2 }}$</li>
-        <li class="list-group-item">Close price difference: {{ delta.diff_close|floatformat:2 }}$</li>
-    </ul>
+        <li class="list-group-item">Min interval length: {{ delta.min_len }}</li>
+        {% for interval in delta.intervals %}
+        <li class="list-group-item">{{ interval.0 }} - {{ interval.1 }}</li>
+        {% endfor %}
   </div>
   {% else %}
     <nav class="navbar navbar-default">
