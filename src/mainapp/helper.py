@@ -100,29 +100,6 @@ def get_analytics(ticker, date_from, date_to):
     return diffs
 
 
-def min_interval(diffs, value):
-    length = len(diffs)
-    min_len = length + 1
-
-    starts = []
-    ends = []
-
-    for start in range(0, length):
-
-        curr_sum = diffs[start]
-
-        for end in range(start + 1, length):
-            curr_sum += diffs[end]
-
-            if curr_sum > value and (end - start + 1) <= min_len:
-                min_len = (end - start + 1)
-                starts.append(start)
-                ends.append(end)
-
-    return min_len, starts, ends
-
-
-# боль
 def get_ticker_delta(ticker, value, _type):
     delta = {}
     if not value or not _type:
@@ -132,43 +109,23 @@ def get_ticker_delta(ticker, value, _type):
     ticker = get_object_or_404(Ticker, symbol=ticker)
 
     cursor = connection.cursor()
-    query = """with series as (
-                    SELECT generate_series((select min(date) from mainapp_price)::date
-                                        ,(select max(date) from mainapp_price)::date
-                                        ,interval '1 day') as date
-                )
-                select series.date::date, diff from (
-                    select date,
-                        abs({0} - lag({0}) over (order by date)) as diff
-                    from mainapp_price
-                    where ticker_id = {1}
-                    order by date
-                ) t1
-                right join series on t1.date = series.date;"""
-    cursor.execute(query.format(_type, ticker.pk))
+    query = """select max( x.date ) as date_start, date_end from (
+                    select t1.date, t1.{0},
+                        min(t2.date) as date_end
+                    from mainapp_price t1
+                    inner join mainapp_price t2
+                    on (t2.{0} >= t1.{0} + {2})
+                    and t1.date < t2.date
+                    and t1.ticker_id = t2.ticker_id
+                    where t1.ticker_id = {1}
+                    group by t1.id
+                    order by t1.date
+                ) x
+                group by date_end;"""
+    cursor.execute(query.format(_type, ticker.pk, value))
     rows = cursor.fetchall()
 
-    dates = [i[0] for i in rows]
-    diffs = [0.0 if i[1] is None else i[1] for i in rows]
-
-    # получаем списки с первыми и последними датами всех интервалов,
-    # сумма изменений по которым больше заданного значения
-    min_len, starts, ends = min_interval(diffs, float(value))
-
-    if min_len > len(diffs):
-        delta['error'] = "Value is greater than whole data changes sum"
-        return delta
-
-    starts = [dates[i] for i in starts]
-    ends = [dates[i] for i in ends]
-
-    intervals = list(zip(starts, ends))
-    # выбираем из полученных выше интервалов те, разница дат которых равна
-    # длинне минимального подсписка - 1
-    intervals = [i for i in intervals if (i[1] - i[0]).days == min_len - 1]
-
     delta['ticker'] = ticker.symbol
-    delta['min_len'] = min_len
-    delta['intervals'] = intervals
+    delta['intervals'] = rows
 
     return delta

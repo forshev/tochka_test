@@ -18,7 +18,7 @@
   </nav>
   <div class="col-md-8 col-md-offset-2">
     <ul class="list-group">
-        <li class="list-group-item">Min interval length: {{ delta.min_len }}</li>
+        <li class="list-group-item">Min intervals</li>
         {% for interval in delta.intervals %}
         <li class="list-group-item">{{ interval.0 }} - {{ interval.1 }}</li>
         {% endfor %}
