@@ -102,30 +102,36 @@ def get_analytics(ticker, date_from, date_to):
 
 def get_ticker_delta(ticker, value, _type):
     delta = {}
+    types = ['open', 'close', 'high', 'low']
+
+    ticker = get_object_or_404(Ticker, symbol=ticker)
+    delta['ticker'] = ticker.symbol
+
     if not value or not _type:
         delta['error'] = "You should specify value and type parameters"
         return delta
 
-    ticker = get_object_or_404(Ticker, symbol=ticker)
+    if _type in types and value.isdigit():
+        cursor = connection.cursor()
+        query = """select max( x.date ) as date_start, date_end from (
+                        select t1.date, t1.{0},
+                            min(t2.date) as date_end
+                        from mainapp_price t1
+                        inner join mainapp_price t2
+                            on (t2.{0} >= t1.{0} + {2} or t2.{0} <= t1.{0} - 8)
+                            and t1.date < t2.date
+                            and t1.ticker_id = t2.ticker_id
+                        where t1.ticker_id = {1}
+                        group by t1.id
+                        order by t1.date
+                    ) x
+                    group by date_end
+                    order by date_start"""
+        cursor.execute(query.format(_type, ticker.pk, value))
+        rows = cursor.fetchall()
+        delta['intervals'] = rows
 
-    cursor = connection.cursor()
-    query = """select max( x.date ) as date_start, date_end from (
-                    select t1.date, t1.{0},
-                        min(t2.date) as date_end
-                    from mainapp_price t1
-                    inner join mainapp_price t2
-                    on (t2.{0} >= t1.{0} + {2})
-                    and t1.date < t2.date
-                    and t1.ticker_id = t2.ticker_id
-                    where t1.ticker_id = {1}
-                    group by t1.id
-                    order by t1.date
-                ) x
-                group by date_end;"""
-    cursor.execute(query.format(_type, ticker.pk, value))
-    rows = cursor.fetchall()
-
-    delta['ticker'] = ticker.symbol
-    delta['intervals'] = rows
+    else:
+        delta['error'] = "Invalid parameters"
 
     return delta
