@@ -118,7 +118,7 @@ def get_ticker_delta(ticker, value, _type):
                             min(t2.date) as date_end
                         from mainapp_price t1
                         inner join mainapp_price t2
-                            on (t2.{0} >= t1.{0} + {2} or t2.{0} <= t1.{0} - 8)
+                            on (t2.{0} >= t1.{0} + {2} or t2.{0} <= t1.{0} - {2})
                             and t1.date < t2.date
                             and t1.ticker_id = t2.ticker_id
                         where t1.ticker_id = {1}
