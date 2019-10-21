@@ -1,6 +1,6 @@
 certifi==2018.1.18
 chardet==3.0.4
-Django==1.11.12
+Django==1.11.23
 django-suit==0.2.26
 idna==2.6
 lxml==4.2.1
